@@ -3,6 +3,27 @@ use rand::Rng;
 use scalable_cuckoo_filter::ScalableCuckooFilter;
 use std::cmp::Ordering;
 use std::io;
+use std::collections::HashMap;
+use std::collections::hash_map::DefaultHasher;
+
+// Required to call the `.hash` and `.finish` methods, which are defined on traits.
+use std::hash::{Hash, Hasher};
+
+
+
+// Let's make an enum that can receive a Python object and return
+// the correct rust variant
+// #[pyclass]
+#[derive(FromPyObject, Hash)]
+enum Value {
+    #[pyo3(transparent, annotation = "str")]
+    String(String),
+    Int(i64),
+    // Float(f64),
+    Bool(bool),
+    Vec(Vec<Value>),
+}
+
 
 // Using pyo3, let's make a wrapper class for the `scalable_cuckoo_filter::ScalableCuckooFilter`
 // struct. This will allow us to create a Python class that wraps the Rust struct.
@@ -10,7 +31,7 @@ use std::io;
 // https://docs.rs/scalable_cuckoo_filter/0.3.2/scalable_cuckoo_filter/struct.ScalableCuckooFilter.html
 #[pyclass(unsendable)]
 pub(crate) struct PyScalableCuckooFilter {
-    inner: ScalableCuckooFilter<String>,
+    inner: ScalableCuckooFilter<Value>,
 }
 
 /*
@@ -36,17 +57,66 @@ impl PyScalableCuckooFilter {
         }
     }
 
-    // fn insert(&mut self, item: u64) -> bool {
-    //     self.inner.insert(item)
+    fn __len__(&self) -> usize {
+        self.inner.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    fn capacity(&self) -> usize {
+        self.inner.capacity()
+    }
+
+    fn bits(&self) -> u64 {
+        self.inner.bits()
+    }
+
+    fn false_positive_probability(&self) -> f64 {
+        self.inner.false_positive_probability()
+    }
+
+    fn entries_per_bucket(&self) -> usize {
+        self.inner.entries_per_bucket()
+    }
+
+    fn max_kicks(&self) -> usize {
+        self.inner.max_kicks()
+    }
+
+    fn __contains__(&self, item: Value) -> bool {
+        self.inner.contains(&item)
+    }
+
+    fn insert(&mut self, item: Value) {
+        self.inner.insert(&item)
+    }
+
+    fn shrink_to_fit(&mut self) {
+        self.inner.shrink_to_fit()
+    }
+
+    fn remove(&mut self, item: Value) -> bool {
+        self.inner.remove(&item)
+    }
+
+    // Methods for serialization and deserialization
+
+    fn serialize(&self) -> Vec<u8> {
+        // Use Serde to serialize the `ScalableCuckooFilter` struct to a byte array.
+        // TODO
+        vec![]
+    }
+
+    // #[staticmethod]
+    // fn deserialize(serialized: Vec<u8>) -> Self {
+    //     // TODO
+    //     // PyScalableCuckooFilter {
+    //     //     inner: ScalableCuckooFilter::deserialize(&serialized),
+    //     // }
     // }
 
-    // fn contains(&self, item: u64) -> bool {
-    //     self.inner.contains(item)
-    // }
-
-    // fn remove(&mut self, item: u64) -> bool {
-    //     self.inner.remove(item)
-    // }
 }
 
 #[pyfunction]
