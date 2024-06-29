@@ -59,7 +59,7 @@ These are the the types that can be used with the filter:
 - `bytes`
 - `bytearray`
 - `int`
-- `float` (but np.nan is not supported)
+- `float` (but `NaN` is not supported)
 - `bool`
 
 Also, lists and tuples of the above types are supported, including with nesting.
