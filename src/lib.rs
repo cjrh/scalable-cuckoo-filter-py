@@ -15,7 +15,13 @@ struct MyNotNan(NotNan<f64>);
 impl<'py> FromPyObject<'py> for MyNotNan {
     fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
         let value: f64 = ob.extract()?;
-        Ok(MyNotNan(NotNan::new(value).unwrap()))
+        let nn = NotNan::new(value).map_err(|e| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                "Only f64 non-NaN values allowed: {}",
+                e
+            ))
+        })?;
+        Ok(MyNotNan(nn))
     }
 }
 
@@ -82,11 +88,6 @@ impl PyScalableCuckooFilter {
     fn max_kicks(&self) -> usize {
         self.inner.max_kicks()
     }
-
-    // fn __contains__(&self, item: Value) -> bool {
-    //     self.inner.contains(&item)
-    // }
-
 
     /// This name best expresses the probabilistic nature of the filter.
     /// If this returns `true`, the item might be in the filter. If this returns `false`,

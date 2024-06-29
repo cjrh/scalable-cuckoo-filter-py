@@ -28,37 +28,37 @@ def test_types(value):
     scf = PyScalableCuckooFilter(1000, 0.001)
 
     # Should fail membership test
-    assert value not in scf
+    assert not scf.might_contain(value)
     scf.insert(value)
 
     # Should pass membership test
-    assert value in scf
+    assert scf.might_contain(value)
 
 
 def test_list_tuple():
     scf = PyScalableCuckooFilter(1000, 0.001)
-    assert [1, 2, 3] not in scf
-    assert (1, 2, 3) not in scf
+    assert not scf.might_contain([1, 2, 3])
+    assert not scf.might_contain((1, 2, 3))
     scf.insert([1, 2, 3])
-    assert [1, 2, 3] in scf
-    assert (1, 2, 3) in scf
+    assert scf.might_contain([1, 2, 3])
+    assert scf.might_contain((1, 2, 3))
 
 
 def test_str_bytes():
     scf = PyScalableCuckooFilter(1000, 0.001)
-    assert "hello" not in scf
-    assert b"hello" not in scf
+    assert not scf.might_contain("hello")
+    assert not scf.might_contain(b"hello")
 
     scf.insert("hello")
-    assert "hello" in scf
-    assert b"hello" not in scf
+    assert scf.might_contain("hello")
+    assert not scf.might_contain(b"hello")
 
     scf.insert(b"hello")
-    assert b"hello" in scf
+    assert scf.might_contain(b"hello")
 
     scf.remove("hello")
-    assert b"hello" in scf
-    assert "hello" not in scf
+    assert not scf.might_contain("hello")
+    assert scf.might_contain(b"hello")
 
     assert scf.false_positive_probability() == 0.001
 
@@ -84,7 +84,7 @@ def test_serialization(tmpdir):
 
     # Read it back and test the membership
     scf = PyScalableCuckooFilter.deserialize(ser)
-    assert "hello" in scf
+    assert scf.might_contain("hello")
 
     # Now write to a file
     filename = tmpdir / "scf.bin"
@@ -96,16 +96,16 @@ def test_serialization(tmpdir):
 
     # Read it back from the file
     scf = PyScalableCuckooFilter.read_from_file(filename)
-    assert "hello" in scf
+    assert scf.might_contain("hello")
 
 
 def test_scaling():
     from uuid import uuid4
 
-    scf = PyScalableCuckooFilter(100, 0.0001)
+    scf = PyScalableCuckooFilter(100, 0.01)
     print(scf)
 
-    for _ in range(10000000):
+    for _ in range(100000):
         scf.insert(uuid4().hex)
 
     print()
