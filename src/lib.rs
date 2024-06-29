@@ -1,12 +1,13 @@
 use pyo3::prelude::*;
 use rand::Rng;
 use scalable_cuckoo_filter::ScalableCuckooFilter;
+use std::borrow::Cow;
 use std::cmp::Ordering;
-use std::io;
 use std::hash::Hash;
+use std::io;
+use std::path::PathBuf;
 
 use ordered_float::NotNan;
-
 
 #[derive(Hash)]
 struct MyNotNan(NotNan<f64>);
@@ -18,7 +19,6 @@ impl<'py> FromPyObject<'py> for MyNotNan {
     }
 }
 
-
 #[derive(FromPyObject, Hash)]
 enum Value {
     String(String),
@@ -28,7 +28,6 @@ enum Value {
     Bool(bool),
     Vec(Vec<Value>),
 }
-
 
 // The documentation is here:
 // https://docs.rs/scalable_cuckoo_filter/0.3.2/scalable_cuckoo_filter/struct.ScalableCuckooFilter.html
@@ -42,15 +41,22 @@ impl PyScalableCuckooFilter {
     #[new]
     fn new(initial_capacity_hint: usize, false_positive_probability: f64) -> Self {
         PyScalableCuckooFilter {
-            inner: ScalableCuckooFilter::new(
-                initial_capacity_hint,
-                false_positive_probability,
-            ),
+            inner: ScalableCuckooFilter::new(initial_capacity_hint, false_positive_probability),
         }
     }
 
     fn __len__(&self) -> usize {
         self.inner.len()
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "PyScalableCuckooFilter(len={}, capacity={}, bits={}, fpp={})",
+            self.inner.len(),
+            self.inner.capacity(),
+            self.inner.bits(),
+            self.inner.false_positive_probability()
+        )
     }
 
     fn is_empty(&self) -> bool {
@@ -99,24 +105,56 @@ impl PyScalableCuckooFilter {
         self.inner.remove(&item)
     }
 
-    // Methods for serialization and deserialization
-
-    fn serialize(&self) -> Vec<u8> {
-        // Use Serde to serialize the `ScalableCuckooFilter` struct to a byte array.
-        // TODO
-        use serde::Serialize;
-        let serialized = bincode::serialize(&self.inner).unwrap();
-        serialized
+    fn serialize(&self) -> PyResult<Cow<[u8]>> {
+        bincode::serialize(&self.inner)
+            .map_err(|e| {
+                PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                    "Serialization error: {}",
+                    e
+                ))
+            })
+            .map(Cow::Owned)
     }
 
-    // #[staticmethod]
-    // fn deserialize(serialized: Vec<u8>) -> Self {
-    //     // TODO
-    //     // PyScalableCuckooFilter {
-    //     //     inner: ScalableCuckooFilter::deserialize(&serialized),
-    //     // }
-    // }
+    #[staticmethod]
+    fn deserialize(serialized: Vec<u8>) -> Self {
+        PyScalableCuckooFilter {
+            inner: bincode::deserialize(&serialized).unwrap(),
+        }
+    }
 
+    fn write_to_file(&self, path: PathBuf) -> PyResult<()> {
+        let file = std::fs::File::create(path).map_err(|e| {
+            PyErr::new::<pyo3::exceptions::PyFileNotFoundError, _>(format!(
+                "Failed to create file: {}",
+                e
+            ))
+        })?;
+        bincode::serialize_into(file, &self.inner).map_err(|e| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                "Serialization error: {}",
+                e
+            ))
+        })?;
+        Ok(())
+    }
+
+    #[staticmethod]
+    fn read_from_file(path: PathBuf) -> PyResult<Self> {
+        let file = std::fs::File::open(path).map_err(|e| {
+            PyErr::new::<pyo3::exceptions::PyFileNotFoundError, _>(format!(
+                "Failed to open file: {}",
+                e
+            ))
+        })?;
+        let inner = bincode::deserialize_from(file).map_err(|e| {
+            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                "Deserialization error: {}",
+                e
+            ))
+        })?;
+        Ok(PyScalableCuckooFilter { inner })
+    }
 }
 
 #[pyfunction]
