@@ -83,13 +83,15 @@ impl PyScalableCuckooFilter {
         self.inner.max_kicks()
     }
 
-    fn __contains__(&self, item: Value) -> bool {
-        self.inner.contains(&item)
-    }
+    // fn __contains__(&self, item: Value) -> bool {
+    //     self.inner.contains(&item)
+    // }
 
-    /// This is repeated here just for consistency with the
-    /// other methods.
-    fn contains(&self, item: Value) -> bool {
+
+    /// This name best expresses the probabilistic nature of the filter.
+    /// If this returns `true`, the item might be in the filter. If this returns `false`,
+    /// the item is definitely not in the filter.
+    fn might_contain(&self, item: Value) -> bool {
         self.inner.contains(&item)
     }
 
