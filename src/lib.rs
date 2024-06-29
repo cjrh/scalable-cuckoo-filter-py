@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 use rand::Rng;
-use scalable_cuckoo_filter::ScalableCuckooFilter;
+use scalable_cuckoo_filter::{ScalableCuckooFilter, ScalableCuckooFilterBuilder};
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::hash::Hash;
@@ -9,24 +9,24 @@ use std::path::PathBuf;
 
 use ordered_float::OrderedFloat;
 
+/// Newtype wrapper for OrderedFloat to implement FromPyObject
 #[derive(Hash, Debug)]
-struct MyNotNan(OrderedFloat<f64>);
+struct FloatHashable(OrderedFloat<f64>);
 
-impl<'py> FromPyObject<'py> for MyNotNan {
+impl<'py> FromPyObject<'py> for FloatHashable {
     fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
         let value: f64 = ob.extract()?;
-        let nn = OrderedFloat(value);
-        Ok(MyNotNan(nn))
+        Ok(FloatHashable(OrderedFloat(value)))
     }
 }
 
 #[derive(FromPyObject, Hash, Debug)]
 enum Value {
     String(String),
-    Vec(Vec<Value>),
     Bytes(Vec<u8>),
+    Vec(Vec<Value>),
     Int(i64),
-    Float(MyNotNan),
+    Float(FloatHashable),
     Bool(bool),
 }
 
@@ -34,16 +34,19 @@ enum Value {
 // https://docs.rs/scalable_cuckoo_filter/0.3.2/scalable_cuckoo_filter/struct.ScalableCuckooFilter.html
 #[pyclass(unsendable)]
 pub(crate) struct PyScalableCuckooFilter {
-    inner: ScalableCuckooFilter<Value>,
+    inner: ScalableCuckooFilter<Value, fxhash::FxHasher>,
 }
 
 #[pymethods]
 impl PyScalableCuckooFilter {
     #[new]
     fn new(initial_capacity_hint: usize, false_positive_probability: f64) -> Self {
-        PyScalableCuckooFilter {
-            inner: ScalableCuckooFilter::new(initial_capacity_hint, false_positive_probability),
-        }
+        let filter: ScalableCuckooFilter<Value, _> = ScalableCuckooFilterBuilder::default()
+            .initial_capacity(initial_capacity_hint)
+            .false_positive_probability(false_positive_probability)
+            .hasher(fxhash::FxHasher::default())
+            .finish();
+        PyScalableCuckooFilter { inner: filter }
     }
 
     fn __len__(&self) -> usize {
