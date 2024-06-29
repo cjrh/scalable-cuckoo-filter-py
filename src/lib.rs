@@ -127,29 +127,22 @@ impl PyScalableCuckooFilter {
     }
 
     fn write_to_file(&self, path: PathBuf) -> PyResult<()> {
-        let file = std::fs::File::create(path).map_err(|e| {
-            PyErr::new::<pyo3::exceptions::PyFileNotFoundError, _>(format!(
-                "Failed to create file: {}",
-                e
-            ))
-        })?;
+        let tmpfilename = path.with_extension("tmp");
+        let file = std::fs::File::create(&tmpfilename)?;
         bincode::serialize_into(file, &self.inner).map_err(|e| {
             PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
                 "Serialization error: {}",
                 e
             ))
         })?;
+        // Renames are atomic on Unix
+        std::fs::rename(&tmpfilename, &path)?;
         Ok(())
     }
 
     #[staticmethod]
     fn read_from_file(path: PathBuf) -> PyResult<Self> {
-        let file = std::fs::File::open(path).map_err(|e| {
-            PyErr::new::<pyo3::exceptions::PyFileNotFoundError, _>(format!(
-                "Failed to open file: {}",
-                e
-            ))
-        })?;
+        let file = std::fs::File::open(path)?;
         let inner = bincode::deserialize_from(file).map_err(|e| {
             PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
                 "Deserialization error: {}",

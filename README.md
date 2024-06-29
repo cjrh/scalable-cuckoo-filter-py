@@ -56,7 +56,13 @@ These are the the types that can be used with the filter:
 - `float` (but np.nan is not supported)
 - `bool`
 
-Also, lists and tuples of the above types are supported. However, note that
-lists and tuples will hash the same as each other. For example, 
-`["foo", "bar"]` and `("foo", "bar")` will be regarded as the same key.
+Also, lists and tuples of the above types are supported, including with nesting.
 
+```python
+scf = PyScalableCuckooFilter(1000, 0.001)
+scf.insert([1, 2, 3])  # list
+scf.insert([1, (2, [3])])  # list(tuple(list)))
+```
+
+However, note that lists and tuples will hash the same as each other. For example, 
+`["foo", "bar"]` and `("foo", "bar")` will be regarded as the same key.
