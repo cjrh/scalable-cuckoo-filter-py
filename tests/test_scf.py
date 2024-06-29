@@ -1,3 +1,5 @@
+import math
+
 import pytest
 from scf import PyScalableCuckooFilter
 
@@ -18,13 +20,19 @@ def test_create():
         pytest.param([1, "a"], id="list"),
         pytest.param((1, 2, 3), id="tuple"),
         pytest.param(1.23, id="float"),
-        pytest.param((1.23, 4.25), id="float"),
+        pytest.param(math.nan, id="float (nan)"),
+        pytest.param((1.23, 4.25), id="float (seq)"),
+        pytest.param((1.23, 4.25), id="float (seq, nan)"),
         pytest.param(True, id="bool"),
         pytest.param(bytearray([1, 2, 3]), id="bytearray"),
         pytest.param([1, [2, [3]]], id="nested"),
+        pytest.param(range(4, 10, 2), id="iterable"),
     ],
 )
 def test_types(value):
+    value_converted = PyScalableCuckooFilter.debug_value(value)
+    print(f"Input value {value} converts to {value_converted}")
+
     scf = PyScalableCuckooFilter(1000, 0.001)
 
     # Should fail membership test
@@ -42,6 +50,9 @@ def test_list_tuple():
     scf.insert([1, 2, 3])
     assert scf.might_contain([1, 2, 3])
     assert scf.might_contain((1, 2, 3))
+
+    scf.insert(range(5))
+    assert scf.might_contain([0, 1, 2, 3, 4])
 
 
 def test_str_bytes():

@@ -7,32 +7,27 @@ use std::hash::Hash;
 use std::io;
 use std::path::PathBuf;
 
-use ordered_float::NotNan;
+use ordered_float::OrderedFloat;
 
-#[derive(Hash)]
-struct MyNotNan(NotNan<f64>);
+#[derive(Hash, Debug)]
+struct MyNotNan(OrderedFloat<f64>);
 
 impl<'py> FromPyObject<'py> for MyNotNan {
     fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
         let value: f64 = ob.extract()?;
-        let nn = NotNan::new(value).map_err(|e| {
-            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
-                "Only f64 non-NaN values allowed: {}",
-                e
-            ))
-        })?;
+        let nn = OrderedFloat(value);
         Ok(MyNotNan(nn))
     }
 }
 
-#[derive(FromPyObject, Hash)]
+#[derive(FromPyObject, Hash, Debug)]
 enum Value {
     String(String),
+    Vec(Vec<Value>),
     Bytes(Vec<u8>),
     Int(i64),
     Float(MyNotNan),
     Bool(bool),
-    Vec(Vec<Value>),
 }
 
 // The documentation is here:
@@ -53,6 +48,11 @@ impl PyScalableCuckooFilter {
 
     fn __len__(&self) -> usize {
         self.inner.len()
+    }
+
+    #[staticmethod]
+    fn debug_value(item: Value) -> String {
+        format!("{:?}", item)
     }
 
     fn __repr__(&self) -> String {
@@ -130,10 +130,7 @@ impl PyScalableCuckooFilter {
         let tmpfilename = path.with_extension("tmp");
         let file = std::fs::File::create(&tmpfilename)?;
         bincode::serialize_into(file, &self.inner).map_err(|e| {
-            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
-                "Serialization error: {}",
-                e
-            ))
+            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Serialization error: {}", e))
         })?;
         // Renames are atomic on Unix
         std::fs::rename(&tmpfilename, &path)?;
@@ -144,10 +141,7 @@ impl PyScalableCuckooFilter {
     fn read_from_file(path: PathBuf) -> PyResult<Self> {
         let file = std::fs::File::open(path)?;
         let inner = bincode::deserialize_from(file).map_err(|e| {
-            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
-                "Deserialization error: {}",
-                e
-            ))
+            PyErr::new::<pyo3::exceptions::PyValueError, _>(format!("Deserialization error: {}", e))
         })?;
         Ok(PyScalableCuckooFilter { inner })
     }
