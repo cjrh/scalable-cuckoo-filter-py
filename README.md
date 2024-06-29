@@ -1,7 +1,7 @@
 # scalable-cuckoo-filter-py
 Python wrapper for sile/scalable_cuckoo_filter
 
-See the crate this this wraps:
+See the crate that this wraps:
 
 https://docs.rs/scalable_cuckoo_filter/0.3.2/scalable_cuckoo_filter/index.html
 
