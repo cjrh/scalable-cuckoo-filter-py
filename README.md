@@ -5,6 +5,12 @@ See the crate that this wraps:
 
 https://docs.rs/scalable_cuckoo_filter/0.3.2/scalable_cuckoo_filter/index.html
 
+This can be used as a probabilistic data structure for set membership tests. 
+A cuckoo filter is similar to a Bloom filter, but it supports deletions.
+
+This implementation is scalable, meaning that it can grow and shrink 
+dynamically while maintinaing a low false positive rate.
+
 ## Usage
 
 Create the filter and add a few strings:
