@@ -3,30 +3,33 @@ use rand::Rng;
 use scalable_cuckoo_filter::ScalableCuckooFilter;
 use std::cmp::Ordering;
 use std::io;
-use std::collections::HashMap;
-use std::collections::hash_map::DefaultHasher;
+use std::hash::Hash;
 
-// Required to call the `.hash` and `.finish` methods, which are defined on traits.
-use std::hash::{Hash, Hasher};
+use ordered_float::NotNan;
 
 
+#[derive(Hash)]
+struct MyNotNan(NotNan<f64>);
 
-// Let's make an enum that can receive a Python object and return
-// the correct rust variant
-// #[pyclass]
+impl<'py> FromPyObject<'py> for MyNotNan {
+    fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
+        let value: f64 = ob.extract()?;
+        Ok(MyNotNan(NotNan::new(value).unwrap()))
+    }
+}
+
+
 #[derive(FromPyObject, Hash)]
 enum Value {
-    #[pyo3(transparent, annotation = "str")]
     String(String),
+    Bytes(Vec<u8>),
     Int(i64),
-    // Float(f64),
+    Float(MyNotNan),
     Bool(bool),
     Vec(Vec<Value>),
 }
 
 
-// Using pyo3, let's make a wrapper class for the `scalable_cuckoo_filter::ScalableCuckooFilter`
-// struct. This will allow us to create a Python class that wraps the Rust struct.
 // The documentation is here:
 // https://docs.rs/scalable_cuckoo_filter/0.3.2/scalable_cuckoo_filter/struct.ScalableCuckooFilter.html
 #[pyclass(unsendable)]
@@ -34,17 +37,6 @@ pub(crate) struct PyScalableCuckooFilter {
     inner: ScalableCuckooFilter<Value>,
 }
 
-/*
-
-#[pyclass(frozen, module = "tantivy.tantivy")]
-pub(crate) struct Query {
-    pub(crate) inner: Box<dyn tv::query::Query>,
-}
-
-*/
-
-// Implement the Python class methods for the `PyScalableCuckooFilter` class.
-// This will allow us to create a Python class that wraps the Rust struct.
 #[pymethods]
 impl PyScalableCuckooFilter {
     #[new]
@@ -89,6 +81,12 @@ impl PyScalableCuckooFilter {
         self.inner.contains(&item)
     }
 
+    /// This is repeated here just for consistency with the
+    /// other methods.
+    fn contains(&self, item: Value) -> bool {
+        self.inner.contains(&item)
+    }
+
     fn insert(&mut self, item: Value) {
         self.inner.insert(&item)
     }
@@ -106,7 +104,9 @@ impl PyScalableCuckooFilter {
     fn serialize(&self) -> Vec<u8> {
         // Use Serde to serialize the `ScalableCuckooFilter` struct to a byte array.
         // TODO
-        vec![]
+        use serde::Serialize;
+        let serialized = bincode::serialize(&self.inner).unwrap();
+        serialized
     }
 
     // #[staticmethod]

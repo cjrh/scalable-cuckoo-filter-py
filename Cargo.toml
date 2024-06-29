@@ -9,6 +9,7 @@ name = "scf"
 crate-type = ["cdylib"]
 
 [dependencies]
+ordered-float = "4.2.0"
 rand = "0.8.4"
 scalable_cuckoo_filter = { version = "0.3.2", features = ["serde_support"] }
 
