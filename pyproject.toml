@@ -2,7 +2,34 @@
 requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
-[tool.maturin]
-# "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
-features = ["pyo3/extension-module"]
+[project]
+name = "cjrh-scalable-cuckoo-filter"
+version = "0.2.0"
+description = "Scalable Cuckoo Filter implemented in Rust with Python bindings"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Caleb Hattingh"}
+]
+keywords = ["cuckoo-filter", "probabilistic", "data-structure", "bloom-filter"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Software Development :: Libraries",
+]
 
+[project.urls]
+Repository = "https://github.com/cjrh/scalable-cuckoo-filter-py"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
+compatibility = "manylinux2014"
+strip = true
