@@ -10,6 +10,23 @@ A cuckoo filter is similar to a Bloom filter, but it supports deletions.
 This implementation is scalable, meaning that it can grow and shrink 
 dynamically while maintinaing a low false positive rate.
 
+## Install
+
+> **The package name is different to the import name**. The install name is `cjrh-scalable-cuckoo-filter` but the import name is `scf`. This is because the package name must be unique on PyPI, and `scalable-cuckoo-filter` was already taken.
+
+Install:
+
+```bash
+$ pip install cjrh-scalable-cuckoo-filter
+```
+
+Import:
+
+```
+import scf
+from scf import PyScalableCuckooFilter
+```
+
 ## Usage
 
 Create the filter and add a few strings:
