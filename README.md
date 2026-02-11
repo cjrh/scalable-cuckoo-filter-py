@@ -1,5 +1,6 @@
 # scalable-cuckoo-filter-py
-Python wrapper for sile/scalable_cuckoo_filter
+
+Python wrapper for [sile/scalable_cuckoo_filter](https://github.com/sile/scalable_cuckoo_filter)
 
 See the crate that this wraps:
 
