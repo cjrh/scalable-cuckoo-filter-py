@@ -2,9 +2,7 @@
 
 Python wrapper for [sile/scalable_cuckoo_filter](https://github.com/sile/scalable_cuckoo_filter)
 
-See the crate that this wraps:
-
-https://docs.rs/scalable_cuckoo_filter/0.3.2/scalable_cuckoo_filter/index.html
+See the crate that this wraps: https://docs.rs/scalable_cuckoo_filter/
 
 This can be used as a probabilistic data structure for set membership tests. 
 A cuckoo filter is similar to a Bloom filter, but it supports deletions.
