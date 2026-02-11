@@ -1,4 +1,4 @@
-# scalable-cuckoo-filter-py
+# scf - Scalable Cuckoo Filter
 
 Python wrapper for [sile/scalable_cuckoo_filter](https://github.com/sile/scalable_cuckoo_filter)
 
